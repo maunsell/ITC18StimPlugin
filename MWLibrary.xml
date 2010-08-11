@@ -1,0 +1,29 @@
+<!--
+   MWLibrary.xml
+   ITCStimDevicePlugin
+
+   Created by maunsell on 6/26/10.
+   Copyright 2010 Harvard Medical School. All rights reserved.
+-->
+<MWElements>
+	<MWElement name="ITC18 Stim Device">
+		<!-- XPath 2.0 expression defining nodes of this type -->
+		<match_signature>iodevice[@type='itc18stim']</match_signature>
+		
+		<!-- Inheritance -->
+		<isa>IODevice</isa>
+		
+		<description>
+			Used for interfacing to an ITC-18 for pulse trains
+		</description>
+		<icon>smallIOFolder</icon>
+		
+		<!-- Payload --> 
+		<code>
+			<iodevice tag="ITC18 Stim Device" type="itc18stim" priority="" alt="" pretrigger="" train_duration_ms="" 
+			current_pulses="" biphasic_pulses="" pulse_amplitude="" pulse_width_us="" 
+			pulse_freq_hz="" ua_per_v="">
+			</iodevice>
+		</code>
+	</MWElement>	
+</MWElements>
