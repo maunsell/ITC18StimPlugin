@@ -58,6 +58,7 @@ using namespace mw;
 void *readLaunch(const shared_ptr<ITC18StimDevice> &pITC18StimDevice) {
 	
 	pITC18StimDevice->readData();
+	return NULL;
 }
 
 /********************************************************************************************************************
@@ -331,6 +332,7 @@ bool ITC18StimDevice::readData(void) {
 	for (index = 0; index < channels; index++) {
 		free(channelSamples[index]);
 	}
+	return true;
 }
 
 // Start the scheduled IO on the ITC18StimDevice.  This starts a thread that reads the input ports

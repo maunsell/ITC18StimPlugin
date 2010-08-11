@@ -48,8 +48,6 @@
 		089C167FFE841241C02AAC07 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5C4B0A630DC79212001BC518 /* MWorksCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MWorksCore.framework; path = /Library/Frameworks/MWorksCore.framework; sourceTree = "<absolute>"; };
 		69507F0511FFBC6F00F19EF0 /* ITC.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ITC.framework; path = /Library/Frameworks/ITC.framework; sourceTree = "<absolute>"; };
-		6950822F1201184E00F19EF0 /* LLITC18PulseTrainDevice.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LLITC18PulseTrainDevice.m; path = "/Users/maunsell/Documents/Development/MonkeyWorks/ITC18StimPlugin OLD/LLITC18PulseTrainDevice.m"; sourceTree = "<absolute>"; };
-		695082301201184E00F19EF0 /* LLITC18PulseTrainDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LLITC18PulseTrainDevice.h; path = "/Users/maunsell/Documents/Development/MonkeyWorks/ITC18StimPlugin OLD/LLITC18PulseTrainDevice.h"; sourceTree = "<absolute>"; };
 		69684A1D11D6708D00DE339D /* Development.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Development.xcconfig; path = "/Library/Application Support/MWorks/Developer/Xcode/Development.xcconfig"; sourceTree = "<absolute>"; };
 		69684A1E11D6708D00DE339D /* WARNING.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = WARNING.txt; path = "/Library/Application Support/MWorks/Developer/Xcode/WARNING.txt"; sourceTree = "<absolute>"; };
 		69684B0E11D6B13F00DE339D /* MWLibrary.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = MWLibrary.xml; sourceTree = "<group>"; };
@@ -81,8 +79,6 @@
 		089C166AFE841209C02AAC07 /* CoxlabCorePlugins */ = {
 			isa = PBXGroup;
 			children = (
-				695082301201184E00F19EF0 /* LLITC18PulseTrainDevice.h */,
-				6950822F1201184E00F19EF0 /* LLITC18PulseTrainDevice.m */,
 				69684A1C11D6708D00DE339D /* External Configs */,
 				08FB77AFFE84173DC02AAC07 /* Classes */,
 				32C88E010371C26100C91783 /* Other Sources */,
@@ -296,19 +292,11 @@
 				);
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = /Library/MonkeyWorks/Plugins;
-				LIBRARY_SEARCH_PATHS = (
-					"$(MW_LIB_DIR)",
-					/usr/local/lib,
-				);
-				OTHER_LDFLAGS = (
-					"-L/System/Library/Frameworks",
-					"-L/usr/local/lib",
-					"-llabjackusb",
-					"-lusb-1.0",
-				);
+				LIBRARY_SEARCH_PATHS = "$(MW_LIB_DIR)";
+				OTHER_LDFLAGS = "-L/System/Library/Frameworks";
 				PRODUCT_NAME = ITC18StimPlugin;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				VALID_ARCHS = i386;
+				VALID_ARCHS = "x86_64 i386";
 				WRAPPER_EXTENSION = bundle;
 				ZERO_LINK = YES;
 			};
@@ -342,9 +330,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 69684A1D11D6708D00DE339D /* Development.xcconfig */;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_64_BIT_PRE_XCODE_3_1 = x86_64;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				FINAL_INSTALL_DIR = "$(PLUGINS_DIR)";
+				VALID_ARCHS = "i386 x86_64";
 			};
 			name = Development;
 		};

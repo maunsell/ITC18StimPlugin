@@ -58,7 +58,7 @@
 				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
-					602,
+					642,
 					20,
 					48,
 					43,
@@ -96,7 +96,7 @@
 				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
-					562,
+					602,
 					60,
 					20,
 					48,
@@ -113,26 +113,22 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 302829361;
-			PBXWorkspaceStateSaveDate = 302829361;
+			PBXPerProjectTemplateStateSaveDate = 303255864;
+			PBXWorkspaceStateSaveDate = 303255864;
 		};
 		perUserProjectItems = {
 			6913A5171201DE6000BCC51C /* PBXTextBookmark */ = 6913A5171201DE6000BCC51C /* PBXTextBookmark */;
+			69156BAA1213518F00AD95D6 /* XCBuildMessageTextBookmark */ = 69156BAA1213518F00AD95D6 /* XCBuildMessageTextBookmark */;
+			69156BE61213559B00AD95D6 /* PBXTextBookmark */ = 69156BE61213559B00AD95D6 /* PBXTextBookmark */;
 			692E90FC120DA14B00201942 /* PBXTextBookmark */ = 692E90FC120DA14B00201942 /* PBXTextBookmark */;
-			692E9106120DA24500201942 /* PBXTextBookmark */ = 692E9106120DA24500201942 /* PBXTextBookmark */;
-			692E9107120DA24500201942 /* PBXTextBookmark */ = 692E9107120DA24500201942 /* PBXTextBookmark */;
-			692E9108120DA24500201942 /* PBXTextBookmark */ = 692E9108120DA24500201942 /* PBXTextBookmark */;
-			69507E0111FF2CDF00F19EF0 /* PBXTextBookmark */ = 69507E0111FF2CDF00F19EF0 /* PBXTextBookmark */;
 			6950801012005F8700F19EF0 /* PlistBookmark */ = 6950801012005F8700F19EF0 /* PlistBookmark */;
 			6950801112005F8700F19EF0 /* PBXTextBookmark */ = 6950801112005F8700F19EF0 /* PBXTextBookmark */;
-			6950804B1200661E00F19EF0 /* PBXTextBookmark */ = 6950804B1200661E00F19EF0 /* PBXTextBookmark */;
 			695081A01200EAE200F19EF0 /* PBXTextBookmark */ = 695081A01200EAE200F19EF0 /* PBXTextBookmark */;
 			6950827C120123F400F19EF0 /* PBXTextBookmark */ = 6950827C120123F400F19EF0 /* PBXTextBookmark */;
 			6950827F120123F400F19EF0 /* PBXTextBookmark */ = 6950827F120123F400F19EF0 /* PBXTextBookmark */;
 			69508281120123F400F19EF0 /* PBXTextBookmark */ = 69508281120123F400F19EF0 /* PBXTextBookmark */;
 			69B5DBE8120222D500A3B5AE /* PBXTextBookmark */ = 69B5DBE8120222D500A3B5AE /* PBXTextBookmark */;
 			69B5DBEA120222D500A3B5AE /* PBXTextBookmark */ = 69B5DBEA120222D500A3B5AE /* PBXTextBookmark */;
-			69B5DD5712039F9900A3B5AE /* PBXTextBookmark */ = 69B5DD5712039F9900A3B5AE /* PBXTextBookmark */;
 			69B5DD5912039F9900A3B5AE /* PBXTextBookmark */ = 69B5DD5912039F9900A3B5AE /* PBXTextBookmark */;
 			69B5DDAA120453D900A3B5AE /* PBXTextBookmark */ = 69B5DDAA120453D900A3B5AE /* PBXTextBookmark */;
 			69B5DDE21204593300A3B5AE /* PBXTextBookmark */ = 69B5DDE21204593300A3B5AE /* PBXTextBookmark */;
@@ -169,6 +165,25 @@
 		rType = 0;
 		vrLen = 1161;
 		vrLoc = 15135;
+	};
+	69156BAA1213518F00AD95D6 /* XCBuildMessageTextBookmark */ = {
+		isa = PBXTextBookmark;
+		comments = "Control reaches end of non-void function";
+		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
+		fallbackIsa = XCBuildMessageTextBookmark;
+		rLen = 1;
+		rLoc = 335;
+		rType = 1;
+	};
+	69156BE61213559B00AD95D6 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
+		name = "ITC18StimDevice.cpp: 335";
+		rLen = 0;
+		rLoc = 11163;
+		rType = 0;
+		vrLen = 2353;
+		vrLoc = 11692;
 	};
 	692E901C120CD80600201942 /* MWServer */ = {
 		isa = PBXExecutable;
@@ -235,53 +250,6 @@
 		vrLen = 1159;
 		vrLoc = 852;
 	};
-	692E9106120DA24500201942 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
-		name = "ITC18StimDevice.cpp: 533";
-		rLen = 0;
-		rLoc = 20506;
-		rType = 0;
-		vrLen = 1616;
-		vrLoc = 19738;
-	};
-	692E9107120DA24500201942 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 6950822F1201184E00F19EF0 /* LLITC18PulseTrainDevice.m */;
-		name = "LLITC18PulseTrainDevice.m: 185";
-		rLen = 28;
-		rLoc = 4515;
-		rType = 0;
-		vrLen = 1237;
-		vrLoc = 4044;
-	};
-	692E9108120DA24500201942 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 6950822F1201184E00F19EF0 /* LLITC18PulseTrainDevice.m */;
-		name = "LLITC18PulseTrainDevice.m: 351";
-		rLen = 16;
-		rLoc = 11904;
-		rType = 0;
-		vrLen = 970;
-		vrLoc = 2729;
-	};
-	69507E0111FF2CDF00F19EF0 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 69507E0211FF2CDF00F19EF0 /* Intervals.xml */;
-		name = "Intervals.xml: 4";
-		rLen = 163;
-		rLoc = 81;
-		rType = 0;
-		vrLen = 4348;
-		vrLoc = 0;
-	};
-	69507E0211FF2CDF00F19EF0 /* Intervals.xml */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = text.xml;
-		name = Intervals.xml;
-		path = /Users/maunsell/Documents/Development/MonkeyWorks/XML/Intervals/Intervals.xml;
-		sourceTree = "<absolute>";
-	};
 	6950801012005F8700F19EF0 /* PlistBookmark */ = {
 		isa = PlistBookmark;
 		fRef = 8D5B49B7048680CD000E48DA /* Info.plist */;
@@ -303,23 +271,6 @@
 		vrLen = 89;
 		vrLoc = 0;
 	};
-	6950804B1200661E00F19EF0 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 6950804C1200661E00F19EF0 /* ComponentFactory.h */;
-		name = "ComponentFactory.h: 26";
-		rLen = 17;
-		rLoc = 728;
-		rType = 0;
-		vrLen = 1180;
-		vrLoc = 25;
-	};
-	6950804C1200661E00F19EF0 /* ComponentFactory.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = ComponentFactory.h;
-		path = "/Users/maunsell/Documents/Development/MonkeyWorks/MonkeyWorks DiCarlo/MonkeyWorks 0.4.4/mw_core/build/MWorksCore.framework/Versions/A/Headers/ComponentFactory.h";
-		sourceTree = "<absolute>";
-	};
 	695080DC1200DF3F00F19EF0 /* ITC18.h */ = {
 		isa = PBXFileReference;
 		lastKnownFileType = sourcecode.c.h;
@@ -336,22 +287,6 @@
 		rType = 0;
 		vrLen = 406;
 		vrLoc = 0;
-	};
-	6950822F1201184E00F19EF0 /* LLITC18PulseTrainDevice.m */ = {
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {780, 7182}}";
-			sepNavSelRange = "{11904, 16}";
-			sepNavVisRange = "{2729, 970}";
-			sepNavWindowFrame = "{{551, 15}, {729, 763}}";
-		};
-	};
-	695082301201184E00F19EF0 /* LLITC18PulseTrainDevice.h */ = {
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {823, 490}}";
-			sepNavSelRange = "{358, 6}";
-			sepNavVisRange = "{0, 432}";
-			sepNavWindowFrame = "{{15, 4}, {1100, 774}}";
-		};
 	};
 	6950824D12011FFD00F19EF0 /* stl_deque.h */ = {
 		isa = PBXFileReference;
@@ -507,16 +442,6 @@
 		path = "/Library/Application Support/MWorks/Developer/include/boost/bind/bind.hpp";
 		sourceTree = "<absolute>";
 	};
-	69B5DD5712039F9900A3B5AE /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 695082301201184E00F19EF0 /* LLITC18PulseTrainDevice.h */;
-		name = "LLITC18PulseTrainDevice.h: 1";
-		rLen = 0;
-		rLoc = 0;
-		rType = 0;
-		vrLen = 875;
-		vrLoc = 0;
-	};
 	69B5DD5912039F9900A3B5AE /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = 69B5DD33120249AA00A3B5AE /* bind.hpp */;
@@ -598,9 +523,9 @@
 	};
 	81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {821, 8442}}";
-			sepNavSelRange = "{21394, 0}";
-			sepNavVisRange = "{13616, 962}";
+			sepNavIntBoundsRect = "{{0, 0}, {974, 7813}}";
+			sepNavSelRange = "{1822, 10}";
+			sepNavVisRange = "{1276, 1056}";
 			sepNavWindowFrame = "{{15, 4}, {1100, 774}}";
 		};
 	};
