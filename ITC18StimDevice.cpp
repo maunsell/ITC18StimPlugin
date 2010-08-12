@@ -54,13 +54,13 @@ using namespace mw;
 /********************************************************************************************************************
  External functions for scheduling.  Placed up here because I haven't figured out the correct declaration syntax.
  ********************************************************************************************************************/
-
+/*
 void *readLaunch(const shared_ptr<ITC18StimDevice> &pITC18StimDevice) {
 	
 	pITC18StimDevice->readData();
 	return NULL;
 }
-
+*/
 /********************************************************************************************************************
  Constructor and destructor functions
 ********************************************************************************************************************/
@@ -171,10 +171,10 @@ void ITC18StimDevice::checkParameters(void) {
 	
 	PulseTrainData train;
 	
-	if (!parametersDirty) {
-		mprintf(" ITC18StimDevice:checkParameters -- nothing has changed");
-		return;
-	}
+//	if (!parametersDirty) {
+//		mprintf(" ITC18StimDevice:checkParameters -- nothing has changed");
+//		return;
+//	}
 	mprintf(" ITC18StimDevice:checkParameters -- needs new instructions");
 	train.currentPulses = currentPulses->getValue();				// true for current, false for voltage
 	train.amplitude = pulseAmplitude->getValue();
@@ -265,7 +265,7 @@ void ITC18StimDevice::openITC18(void) {
 			return;
 		}
 	}
-	if (ITC18_Initialize(pLocal, ITC18_STANDARD) == noErr) {
+	if (ITC18_Initialize(pLocal, ITC18_STANDARD) != noErr) {
 		merror(M_IODEVICE_MESSAGE_DOMAIN, "ITC18StimDevice::openITC18: Failed to initialize ITC18"); 
 		ITC18_Close(pLocal);
 		return;
@@ -278,6 +278,10 @@ void ITC18StimDevice::openITC18(void) {
 
 // Collect AD values from the ITC18 as they become ready.  This method is schedule to occur periodically by 
 // startDeviceIO.
+
+// For now we have not included reading of AD samples.  This could be added in the future if MWorks is up to it.
+
+/*
 
 bool ITC18StimDevice::readData(void) {
 	
@@ -335,6 +339,8 @@ bool ITC18StimDevice::readData(void) {
 	return true;
 }
 
+ */
+
 // Start the scheduled IO on the ITC18StimDevice.  This starts a thread that reads the input ports
 
 bool ITC18StimDevice::startDeviceIO(void) {
@@ -354,10 +360,10 @@ bool ITC18StimDevice::startDeviceIO(void) {
 	boost::mutex::scoped_lock lock(ITC18DeviceLock); 
 	ITC18Running = true;
 	ITC18_Start(itc, false, true, false, false);				// Start ITC-18, no external trigger, output enabled
-	 shared_ptr<ITC18StimDevice> this_one = shared_from_this();
-	 pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, (MWTime)0, kITC18ReadPeriodUS,
-						M_REPEAT_INDEFINITELY, boost::bind(readLaunch, this_one), M_DEFAULT_IODEVICE_PRIORITY,
-						kReadTaskWarnSlopUS, kReadTaskFailSlopUS, M_MISSED_EXECUTION_DROP);
+//	 shared_ptr<ITC18StimDevice> this_one = shared_from_this();
+//	 pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, (MWTime)0, kITC18ReadPeriodUS,
+//						M_REPEAT_INDEFINITELY, boost::bind(readLaunch, this_one), M_DEFAULT_IODEVICE_PRIORITY,
+//						kReadTaskWarnSlopUS, kReadTaskFailSlopUS, M_MISSED_EXECUTION_DROP);
 //	schedule_nodes.push_back(pollScheduleNode);       
 	return true;
 }
@@ -484,11 +490,11 @@ bool ITC18StimDevice::makeInstructionsFromTrainData(PulseTrainData *pTrain, long
 		mprintf("%4hx", pulseValues[index]);
 	}
 	
-	// Create an array with the entire output sequence.  It is created zeroed.  If there is a gating signal,
+	// Create an array with the entire output sequence.  If there is a gating signal,
 	// we add that to the digital output values.  bufferLengthBytes is always at least as long as instructionsPerSampleSet.
 	
 	bufferLengthBytes = max(sampleSetsInTrain * instructionsPerSampleSet, instructionsPerSampleSet);
-	assert(trainValues = (short *)malloc(bufferLengthBytes * sizeof(short)));
+	assert(trainValues = (short *)calloc(bufferLengthBytes, sizeof(short)));
 	if (gateBits > 0) {									// load digital output commands for the gate (if any)
 		for (sPtr = trainValues, index = 0; index < sampleSetsInTrain; index++) {
 			sPtr += channels;							// skip over analog values
@@ -496,7 +502,7 @@ bool ITC18StimDevice::makeInstructionsFromTrainData(PulseTrainData *pTrain, long
 		}
 	}
 	
-	// Add the pulses to the train instructions .  If the stimulation frequency is zero, or the train duration
+	// Add the pulses to the train instructions.  If the stimulation frequency is zero, or the train duration
 	// is less than one pulse, or the pulse width is zero, do nothing.
 
 	if ((pulsePeriodUS > 0) && (sampleSetsPerPhase > 0)) {
@@ -542,9 +548,9 @@ bool ITC18StimDevice::makeInstructionsFromTrainData(PulseTrainData *pTrain, long
 	// Set up the ITC for the stimulus train.  Do everything except the start
 	
 	for (index = 0; index < channels; index++) {
-		ITCInstructions[index] = 
-				ADInstructions[pTrain[index].DAChannel] | DAInstructions[pTrain[index].DAChannel] | 
-				ITC18_INPUT_UPDATE | ITC18_OUTPUT_UPDATE;
+		ITCInstructions[index] = DAInstructions[pTrain[index].DAChannel] | ITC18_OUTPUT_UPDATE;
+//		ADInstructions[pTrain[index].DAChannel] | DAInstructions[pTrain[index].DAChannel] | 
+//		ITC18_INPUT_UPDATE | ITC18_OUTPUT_UPDATE;
 	} 
 	ITCInstructions[index] = ITC18_OUTPUT_DIGITAL1 | ITC18_INPUT_SKIP | ITC18_OUTPUT_UPDATE;
 	if (itc != NULL) {									// don't access ITC if we're debugging
