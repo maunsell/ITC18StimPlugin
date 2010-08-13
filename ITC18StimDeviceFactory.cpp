@@ -16,10 +16,10 @@ boost::shared_ptr<mw::Component> ITC18StimDeviceFactory::createObject(std::map<s
 																	  mw::ComponentRegistry *reg) {
 	
 	bool noAlternativeDevice;
-	const char *attributeList[] = {"prime", "train_duration_ms", "current_pulses", "biphasic_pulses",
+	const char *attributeList[] = {"prime", "running", "train_duration_ms", "current_pulses", "biphasic_pulses",
 		"pulse_amplitude", "pulse_width_us", "pulse_freq_hz", "ua_per_v"};
-	mw::GenericDataType typeList[] = {M_BOOLEAN, M_INTEGER, M_BOOLEAN, M_BOOLEAN, M_INTEGER, M_INTEGER, 
-		M_INTEGER, M_INTEGER};
+	mw::GenericDataType typeList[] = {M_BOOLEAN, M_BOOLEAN, M_INTEGER, M_BOOLEAN, M_BOOLEAN, M_INTEGER, 
+		M_INTEGER, M_INTEGER, M_INTEGER};
 	boost::shared_ptr<mw::Variable> variableList[sizeof(attributeList)/sizeof(const char *)];
 	
 	for (long index = 0; index < sizeof(attributeList) / sizeof(const char *); index++) {
@@ -36,6 +36,6 @@ boost::shared_ptr<mw::Component> ITC18StimDeviceFactory::createObject(std::map<s
 	
 	boost::shared_ptr <mw::Component> new_daq = boost::shared_ptr<mw::Component>(new ITC18StimDevice(
 				 noAlternativeDevice, scheduler, variableList[0], variableList[1], variableList[2], variableList[3], 
-				 variableList[4], variableList[5], variableList[6], variableList[7]));
+				 variableList[4], variableList[5], variableList[6], variableList[7], variableList[8]));
 	return new_daq;
 }	

@@ -44,8 +44,8 @@ class ITC18StimDevice : public IODevice {
 protected:  	
 	boost::mutex					active_mutex;
 	boost::shared_ptr <Variable>	biphasicPulses;
-	long							bufferLengthBytes;				// number of stimulus instructions
-	long							bufferLengthSets;				// number of stimulus sample sets
+	long							bufferLengthSamples;		// number of stimulus instructions/samples
+	long							bufferLengthSets;			// number of stimulus sample sets
 	long							channels;					// number of active channels
 	short							*channelSamples[ITC18_NUMBEROFDACOUTPUTS];
 	boost::shared_ptr <Variable>	currentPulses;
@@ -84,10 +84,12 @@ protected:
 public:
 	
 	boost::shared_ptr <Variable>	prime;
+	boost::shared_ptr <Variable>	running;
 
 	ITC18StimDevice(bool noAlternativeDevice,
 					const boost::shared_ptr <Scheduler> &a_scheduler,
-					const boost::shared_ptr <Variable> _preTrigger,
+					const boost::shared_ptr <Variable> _prime,
+					const boost::shared_ptr <Variable> _running,
 					const boost::shared_ptr <Variable> _train_duration_ms,
 					const boost::shared_ptr <Variable> _current_pulses,
 					const boost::shared_ptr <Variable> _biphasic_pulses, 

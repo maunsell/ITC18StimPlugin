@@ -54,13 +54,16 @@ using namespace mw;
 /********************************************************************************************************************
  External functions for scheduling.  Placed up here because I haven't figured out the correct declaration syntax.
  ********************************************************************************************************************/
-/*
-void *readLaunch(const shared_ptr<ITC18StimDevice> &pITC18StimDevice) {
+
+void *readLaunch(const weak_ptr<ITC18StimDevice> &pITC18StimDevice) {
 	
-	pITC18StimDevice->readData();
+	shared_ptr <ITC18StimDevice> sp = pITC18StimDevice.lock();
+	sp->readData();
+	sp.reset();
+
 	return NULL;
 }
-*/
+
 /********************************************************************************************************************
  Constructor and destructor functions
 ********************************************************************************************************************/
@@ -68,6 +71,7 @@ void *readLaunch(const shared_ptr<ITC18StimDevice> &pITC18StimDevice) {
 ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 								 const boost::shared_ptr <Scheduler> &a_scheduler,
                                  const boost::shared_ptr <Variable> _prime,
+                                 const boost::shared_ptr <Variable> _running,
                                  const boost::shared_ptr <Variable> _train_duration_ms,
                                  const boost::shared_ptr <Variable> _current_pulses,
                                  const boost::shared_ptr <Variable> _biphasic_pulses, 
@@ -82,6 +86,7 @@ ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 	noAlternativeDevice = _noAlternativeDevice;
 	scheduler = a_scheduler;
 	prime = _prime;
+	running = _running;
 	trainDurationMS = _train_duration_ms;
 	currentPulses = _current_pulses;
 	biphasicPulses = _biphasic_pulses;
@@ -91,6 +96,7 @@ ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 	UAPerV = _ua_per_v;
 
 	ITC18Running = false;
+	running->setValue(false);
 	itc = NULL;
 }
 
@@ -188,6 +194,7 @@ int	ITC18StimDevice::getAvailable() {
 
 	int available, overflow;
 	
+	boost::mutex::scoped_lock lock(ITC18DeviceLock);
 	ITC18_GetFIFOReadAvailableOverflow(itc, &available, &overflow);
 	if (overflow != 0) {
         merror(M_IODEVICE_MESSAGE_DOMAIN, "ITC18StimDevice::getAvailable: Fatal FIFO overflow.");
@@ -202,7 +209,6 @@ void ITC18StimDevice::loadInstructions(void) {
 	
 	PulseTrainData train;
 	
-	mprintf("LoadInstructions");
 	train.currentPulses = currentPulses->getValue();				// true for current, false for voltage
 	train.amplitude = pulseAmplitude->getValue();
 	train.DAChannel = 0;
@@ -324,10 +330,11 @@ bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long
 	 }
 	 */	
 	// Create an array with the entire output sequence.  If there is a gating signal,
-	// we add that to the digital output values.  bufferLengthBytes is always at least as long as instructionsPerSampleSet.
+	// we add that to the digital output values.  bufferLengthSamples is always at least 
+	// as long as instructionsPerSampleSet.
 	
-	bufferLengthBytes = max(sampleSetsInTrain * instructionsPerSampleSet, instructionsPerSampleSet);
-	assert(trainValues = (short *)calloc(bufferLengthBytes, sizeof(short)));
+	bufferLengthSamples = max(sampleSetsInTrain * instructionsPerSampleSet, instructionsPerSampleSet);
+	assert(trainValues = (short *)calloc(bufferLengthSamples, sizeof(short)));
 	if (gateBits > 0) {									// load digital output commands for the gate (if any)
 		for (sPtr = trainValues, index = 0; index < sampleSetsInTrain; index++) {
 			sPtr += channels;							// skip over analog values
@@ -342,7 +349,7 @@ bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long
 		for (pulseCount = 0; ; pulseCount++) {
 			sampleSetIndex = pulseCount * pulsePeriodUS / sampleSetPeriodUS;	// find offset in instructions
 			valueIndex = sampleSetIndex * instructionsPerSampleSet;
-			if ((valueIndex + sampleSetsPerPulse * ((pTrain->pulseBiphasic) ? 2 : 1) + 1) >= bufferLengthBytes) {
+			if ((valueIndex + sampleSetsPerPulse * ((pTrain->pulseBiphasic) ? 2 : 1) + 1) >= bufferLengthSamples) {
 				break;										// no room for another pulse
 			}
 			replaceShortsInRange(trainValues, pulseValues, valueIndex,  sampleSetsPerPulse * instructionsPerSampleSet);
@@ -357,13 +364,13 @@ bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long
 	
 	if (sampleSetsInPorch > 0) {
 		porchBufferLength = sampleSetsInPorch * instructionsPerSampleSet;
-		assert(porchValues = (short *)calloc((2 * porchBufferLength + bufferLengthBytes), sizeof(short)));
+		assert(porchValues = (short *)calloc((2 * porchBufferLength + bufferLengthSamples), sizeof(short)));
 		sPtr = porchValues;
 		for (index = 0; index < sampleSetsInPorch; index++) {
 			sPtr += channels;							// skip over analog values
 			*(sPtr)++ = gateBits;						// set the gate bits
 		}
-		for (tPtr = trainValues, index = 0; index < bufferLengthBytes; index++) {
+		for (tPtr = trainValues, index = 0; index < bufferLengthSamples; index++) {
 			*sPtr++ = *tPtr++;
 		}
 		for (tPtr = porchValues, index = 0; index < porchBufferLength; index++) {
@@ -371,12 +378,12 @@ bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long
 		}
 		free(trainValues);								// release unneeded data
 		trainValues = porchValues;						// make trainValues point to the whole set
-		bufferLengthBytes += 2 * porchBufferLength;		// tally the buffer length with both porches
+		bufferLengthSamples += 2 * porchBufferLength;		// tally the buffer length with both porches
 	}
 	
 	// Change the last digital output word in the back gate porch to close gate (in case it's open)
 	
-	trainValues[bufferLengthBytes - 1] = 0x00;
+	trainValues[bufferLengthSamples - 1] = 0x00;
 	
 	// Set up the ITC for the stimulus train.  Do everything except the start
 	
@@ -396,7 +403,7 @@ bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long
 			free(trainValues);
 			return false;
 		}
-		result = ITC18_WriteFIFO(itc, bufferLengthBytes, trainValues);
+		result = ITC18_WriteFIFO(itc, bufferLengthSamples, trainValues);
 		if (result != noErr) { 
 			mprintf("Error ITC18_WriteFIFO, result: %d", result);
 			free(trainValues);
@@ -405,12 +412,12 @@ bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long
 		ITC18_SetSamplingInterval(itc, ticksPerInstruction, false);
 	}	
 	/*	
-	 for (index = 49000; index < bufferLengthBytes - 8; index += 8) {
+	 for (index = 49000; index < bufferLengthSamples - 8; index += 8) {
 	 mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", 
 	 trainValues[index + 0], trainValues[index + 1], trainValues[index + 2], trainValues[index + 3], 
 	 trainValues[index + 4], trainValues[index + 5], trainValues[index + 6], trainValues[index + 7]);
 	 }
-	 for ( ; index < bufferLengthBytes; index++) {
+	 for ( ; index < bufferLengthSamples; index++) {
 	 mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", trainValues[index]);
 	 }
 	 */
@@ -472,47 +479,56 @@ void ITC18StimDevice::openITC18(void) {
 
 // For now we have not included reading of AD samples.  This could be added in the future if MWorks is up to it.
 
-/*
-
 bool ITC18StimDevice::readData(void) {
 	
-	short index, *pSamples;
-	long sets, set;
-	int available;
-	static bool garbageFlushed = false;
+//	short index, *pSamples;
+//	long sets, set;
+//	int available;
+//	static bool garbageFlushed = false;
 	
-	if (itc == NULL || !ITC18Running) {
+	if (itc == NULL || !running->getValue()) {
 		return false;
 	}
 	
 	// When a sequence is started, the first three entries in the FIFO are garbage.  They should be thrown out.  
 	
-	boost::mutex::scoped_lock lock(ITC18DeviceLock);
-	available = getAvailable();
-	if (!garbageFlushed) {
+	if (getAvailable() > kGarbageLength + bufferLengthSamples + 1) {
+//		running->setValue(false);
+		stopDeviceIO();
+		return true;
+	}
+	else {
+		mprintf("bufferLengthSamples %d; available %d", bufferLengthSamples, getAvailable());
+		return false;
+	}
+/*
+ if (!garbageFlushed) {
 		if (available < kGarbageLength + 1) {
 			return false;
 		}
-		ITC18_ReadFIFO(itc, kGarbageLength, samples);
+//		ITC18_ReadFIFO(itc, kGarbageLength, samples);
 		garbageFlushed = true;
 		available = getAvailable();
 	}
 	
 	// Wait for the stimulus to be over.
 	
-	if ((available = getAvailable()) < bufferLengthBytes) {
+	
+	if ((available = getAvailable()) < bufferLengthSamples) {
 		return false;
 	}
+	
+	return false;
 	
 	// When all the samples are available, read them and unpack them
 	// Initialize buffers for reading values;
 	
-	samples = (short *)malloc(sizeof(short) * bufferLengthBytes);
+	samples = (short *)malloc(sizeof(short) * bufferLengthSamples);
 	for (index = 0; index < channels; index++) {
 		channelSamples[index] = (short *)malloc(sizeof(short) * bufferLengthSets);
 	}
 	
-	ITC18_ReadFIFO(itc, bufferLengthBytes, samples);							// read all available sets
+	ITC18_ReadFIFO(itc, bufferLengthSamples, samples);							// read all available sets
 	for (set = 0; set < sets; set++) {									// process each set
 		pSamples = &samples[(channels + 1) * set];						// point to start of a set
 		for (index = 0; index < channels; index++) {					// for every channel
@@ -521,20 +537,19 @@ bool ITC18StimDevice::readData(void) {
 	}
 	samplesReady = true;
 	
-	// ??? We need to figure out how to get these data available to MWorks.  For now, just throw them away.
-	
 	free(samples);
 	for (index = 0; index < channels; index++) {
 		free(channelSamples[index]);
 	}
 	return true;
+*/
 }
-
- */
 
 // Start the scheduled IO on the ITC18StimDevice.  This starts a thread that reads the input ports
 
 bool ITC18StimDevice::startDeviceIO(void) {
+	
+//	bool runState;
 	
 	if (VERBOSE_IO_DEVICE >= 1) {
 		mprintf("ITC18StimDevice: startDeviceIO");
@@ -553,12 +568,20 @@ bool ITC18StimDevice::startDeviceIO(void) {
 	}
 	boost::mutex::scoped_lock lock(ITC18DeviceLock); 
 	ITC18Running = true;
+	running->setValue(true);
+//	runState = running->getValue();
+//	mprintf("  ITC18StimDevice: startDeviceIO, running is %d", runState);
 	ITC18_Start(itc, false, true, false, false);				// Start ITC-18, no external trigger, output enabled
-//	 shared_ptr<ITC18StimDevice> this_one = shared_from_this();
-//	 pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, (MWTime)0, kITC18ReadPeriodUS,
-//						M_REPEAT_INDEFINITELY, boost::bind(readLaunch, this_one), M_DEFAULT_IODEVICE_PRIORITY,
-//						kReadTaskWarnSlopUS, kReadTaskFailSlopUS, M_MISSED_EXECUTION_DROP);
-//	schedule_nodes.push_back(pollScheduleNode);       
+	shared_ptr<ITC18StimDevice> this_one = shared_from_this();
+	pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, 
+											 (MWTime)0, 
+											 kITC18ReadPeriodUS,
+											 M_REPEAT_INDEFINITELY, 
+											 boost::bind(readLaunch, weak_ptr<ITC18StimDevice>(this_one)), 
+											 M_DEFAULT_IODEVICE_PRIORITY,
+											 kReadTaskWarnSlopUS, 
+											 kReadTaskFailSlopUS, 
+											 M_MISSED_EXECUTION_DROP);
 	primed = false;
 	return true;
 }
@@ -574,13 +597,14 @@ bool ITC18StimDevice::stopDeviceIO() {
 	// stop all the scheduled DI checking (i.e. stop calls to "updateChannel")
 	
 	if (pollScheduleNode != NULL) {
-		boost::mutex::scoped_lock(pollScheduleNodeLock);
+		boost::mutex::scoped_lock lock1(pollScheduleNodeLock);
         pollScheduleNode->cancel();
     }
-	boost::mutex::scoped_lock lock(ITC18DeviceLock); 
+	boost::mutex::scoped_lock lock2(ITC18DeviceLock); 
 	if (itc != NULL) {
 		ITC18_Stop(itc);
 	}
+	running->setValue(false);
 	ITC18Running = false;
 	return true;
 }
