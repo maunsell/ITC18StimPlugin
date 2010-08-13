@@ -58,7 +58,8 @@ protected:
 	bool							noAlternativeDevice;
 	bool							parametersDirty;
 	shared_ptr<ScheduleTask>		pollScheduleNode;
-	boost::mutex					pollScheduleNodeLock;				
+	boost::mutex					pollScheduleNodeLock;
+	bool							primed;
 	boost::shared_ptr <Variable>	pulseAmplitude;
 	boost::shared_ptr <Variable>	pulseDurationMS;
 	shared_ptr<ScheduleTask>		pulseScheduleNode;
@@ -77,12 +78,12 @@ protected:
 	void openITC18(void);
 	void closeITC18();
 	int	getAvailable();
-	bool makeInstructionsFromTrainData(PulseTrainData *, long);
+	bool loadInstructionsFromTrainData(PulseTrainData *, long);
 	void replaceShortsInRange(short *buffer, short *replacement, long offset, long numShorts);
     
 public:
 	
-	boost::shared_ptr <Variable>	preTrigger;
+	boost::shared_ptr <Variable>	prime;
 
 	ITC18StimDevice(bool noAlternativeDevice,
 					const boost::shared_ptr <Scheduler> &a_scheduler,
@@ -103,7 +104,7 @@ public:
 	virtual bool startDeviceIO();
 	virtual bool stopDeviceIO();		
 	
-	void checkParameters(void);
+	void loadInstructions(void);
 	bool readData(void);
 //	void *readLaunch(const shared_ptr<mw::ITC18StimDevice> &args);
 	void markParametersDirty(void);
@@ -127,17 +128,17 @@ public:
 
 };
 
-class ITC18StimDevicePreTriggerNotification : public VariableNotification {
+class ITC18StimDevicePrimeNotification : public VariableNotification {
 	
 protected:
 	weak_ptr<ITC18StimDevice> daq;
 public:
-	ITC18StimDevicePreTriggerNotification(weak_ptr<ITC18StimDevice> _daq){
+	ITC18StimDevicePrimeNotification(weak_ptr<ITC18StimDevice> _daq){
 		daq = _daq;
 	}
 	virtual void notify(const Datum &data, MWTime timeUS){
 		shared_ptr<ITC18StimDevice> shared_daq(daq);
-		shared_daq->checkParameters();
+		shared_daq->loadInstructions();
 	}
 };
 

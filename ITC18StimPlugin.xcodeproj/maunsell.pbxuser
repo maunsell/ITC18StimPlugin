@@ -8,7 +8,6 @@
 			8D5B49AC048680CD000E48DA /* ITC18StimPlugin */,
 		);
 		breakpoints = (
-			69BEC4451214911B00E60974 /* ITC18StimDevice.cpp:361 */,
 		);
 		codeSenseManager = 69B24E3011F0D42F005CD64F /* Code sense */;
 		executables = (
@@ -59,7 +58,7 @@
 				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
-					642,
+					1093,
 					20,
 					48,
 					43,
@@ -114,8 +113,8 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 303336761;
-			PBXWorkspaceStateSaveDate = 303336761;
+			PBXPerProjectTemplateStateSaveDate = 303409785;
+			PBXWorkspaceStateSaveDate = 303409785;
 		};
 		perUserProjectItems = {
 			6913A5171201DE6000BCC51C /* PBXTextBookmark */ = 6913A5171201DE6000BCC51C /* PBXTextBookmark */;
@@ -129,13 +128,15 @@
 			69B5DBEA120222D500A3B5AE /* PBXTextBookmark */ = 69B5DBEA120222D500A3B5AE /* PBXTextBookmark */;
 			69B5DD5912039F9900A3B5AE /* PBXTextBookmark */ = 69B5DD5912039F9900A3B5AE /* PBXTextBookmark */;
 			69B5DDE21204593300A3B5AE /* PBXTextBookmark */ = 69B5DDE21204593300A3B5AE /* PBXTextBookmark */;
-			69B5DEAC1204632400A3B5AE /* PBXTextBookmark */ = 69B5DEAC1204632400A3B5AE /* PBXTextBookmark */;
 			69B5DEB712046E6200A3B5AE /* PBXTextBookmark */ = 69B5DEB712046E6200A3B5AE /* PBXTextBookmark */;
 			69BEC42012148E9E00E60974 /* PBXTextBookmark */ = 69BEC42012148E9E00E60974 /* PBXTextBookmark */;
-			69BEC42112148E9E00E60974 /* PBXTextBookmark */ = 69BEC42112148E9E00E60974 /* PBXTextBookmark */;
 			69BEC45F12149A3900E60974 /* PBXTextBookmark */ = 69BEC45F12149A3900E60974 /* PBXTextBookmark */;
-			69BEC46012149A3900E60974 /* PBXTextBookmark */ = 69BEC46012149A3900E60974 /* PBXTextBookmark */;
-			69BEC46C12149BDD00E60974 /* PBXTextBookmark */ = 69BEC46C12149BDD00E60974 /* PBXTextBookmark */;
+			69BEC4A51215B1ED00E60974 /* PBXTextBookmark */ = 69BEC4A51215B1ED00E60974 /* PBXTextBookmark */;
+			69BEC4AB1215B2B900E60974 /* PBXTextBookmark */ = 69BEC4AB1215B2B900E60974 /* PBXTextBookmark */;
+			69BEC4B41215B4A900E60974 /* PBXTextBookmark */ = 69BEC4B41215B4A900E60974 /* PBXTextBookmark */;
+			69BEC4B61215B4A900E60974 /* PBXTextBookmark */ = 69BEC4B61215B4A900E60974 /* PBXTextBookmark */;
+			69BEC4C01215B4C900E60974 /* PBXTextBookmark */ = 69BEC4C01215B4C900E60974 /* PBXTextBookmark */;
+			69BEC4D61215B81A00E60974 /* PBXTextBookmark */ = 69BEC4D61215B81A00E60974 /* PBXTextBookmark */;
 		};
 		sourceControlManager = 69B24E2F11F0D42F005CD64F /* Source Control */;
 		userBuildSettings = {
@@ -250,11 +251,6 @@
 		name = ITC18.h;
 		path = /Developer/SDKs/MacOSX10.6.sdk/Library/Frameworks/ITC.framework/Headers/ITC18.h;
 		sourceTree = "<absolute>";
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {823, 6110}}";
-			sepNavSelRange = "{1926, 14}";
-			sepNavVisRange = "{1427, 929}";
-		};
 	};
 	695081A01200EAE200F19EF0 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -312,9 +308,9 @@
 	};
 	69684B0E11D6B13F00DE339D /* MWLibrary.xml */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {780, 513}}";
-			sepNavSelRange = "{713, 0}";
-			sepNavVisRange = "{0, 797}";
+			sepNavIntBoundsRect = "{{0, 0}, {823, 428}}";
+			sepNavSelRange = "{601, 0}";
+			sepNavVisRange = "{0, 792}";
 		};
 	};
 	69B24E2F11F0D42F005CD64F /* Source Control */ = {
@@ -435,7 +431,7 @@
 		fRef = 69684B0E11D6B13F00DE339D /* MWLibrary.xml */;
 		name = "MWLibrary.xml: 25";
 		rLen = 0;
-		rLoc = 713;
+		rLoc = 708;
 		rType = 0;
 		vrLen = 797;
 		vrLoc = 0;
@@ -449,20 +445,10 @@
 	};
 	69B5DE701204609300A3B5AE /* ITC18StimDeviceFactory.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {821, 644}}";
-			sepNavSelRange = "{233, 0}";
-			sepNavVisRange = "{0, 842}";
+			sepNavIntBoundsRect = "{{0, 0}, {831, 678}}";
+			sepNavSelRange = "{487, 0}";
+			sepNavVisRange = "{0, 1865}";
 		};
-	};
-	69B5DEAC1204632400A3B5AE /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 69B5DE701204609300A3B5AE /* ITC18StimDeviceFactory.cpp */;
-		name = "ITC18StimDeviceFactory.cpp: 36";
-		rLen = 0;
-		rLoc = 1569;
-		rType = 0;
-		vrLen = 1669;
-		vrLoc = 0;
 	};
 	69B5DEB712046E6200A3B5AE /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -484,45 +470,12 @@
 		vrLen = 408;
 		vrLoc = 0;
 	};
-	69BEC42112148E9E00E60974 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 81BCE9CC1180B3A600C0AC5B /* ITC18StimDevice.h */;
-		name = "ITC18StimDevice.h: 38";
-		rLen = 0;
-		rLoc = 928;
-		rType = 0;
-		vrLen = 1651;
-		vrLoc = 613;
-	};
-	69BEC4451214911B00E60974 /* ITC18StimDevice.cpp:361 */ = {
-		isa = PBXFileBreakpoint;
-		actions = (
-		);
-		breakpointStyle = 0;
-		continueAfterActions = 0;
-		countType = 0;
-		delayBeforeContinue = 0;
-		fileReference = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
-		functionName = "ITC18StimDevice::startDeviceIO(void)";
-		hitCount = 0;
-		ignoreCount = 0;
-		lineNumber = 361;
-		location = ITC18StimPlugin;
-		modificationTime = 303338744.738504;
-		originalNumberOfMultipleMatches = 1;
-		state = 2;
-	};
 	69BEC45B12149A3100E60974 /* stdlib.h */ = {
 		isa = PBXFileReference;
 		lastKnownFileType = sourcecode.c.h;
 		name = stdlib.h;
 		path = /Developer/SDKs/MacOSX10.6.sdk/usr/include/stdlib.h;
 		sourceTree = "<absolute>";
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {974, 4823}}";
-			sepNavSelRange = "{5177, 0}";
-			sepNavVisRange = "{4755, 652}";
-		};
 	};
 	69BEC45F12149A3900E60974 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -534,25 +487,77 @@
 		vrLen = 1732;
 		vrLoc = 4287;
 	};
-	69BEC46012149A3900E60974 /* PBXTextBookmark */ = {
+	69BEC4A51215B1ED00E60974 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
-		name = "ITC18StimDevice.cpp: 497";
+		fRef = 81BCE9CC1180B3A600C0AC5B /* ITC18StimDevice.h */;
+		name = "ITC18StimDevice.h: 131";
 		rLen = 0;
-		rLoc = 18553;
+		rLoc = 3899;
 		rType = 0;
-		vrLen = 2745;
-		vrLoc = 17472;
+		vrLen = 1326;
+		vrLoc = 3025;
 	};
-	69BEC46C12149BDD00E60974 /* PBXTextBookmark */ = {
+	69BEC4AB1215B2B900E60974 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 69B5DE701204609300A3B5AE /* ITC18StimDeviceFactory.cpp */;
+		name = "ITC18StimDeviceFactory.cpp: 19";
+		rLen = 0;
+		rLoc = 487;
+		rType = 0;
+		vrLen = 1865;
+		vrLoc = 0;
+	};
+	69BEC4B41215B4A900E60974 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 69BEC4B51215B4A900E60974 /* ITCStimTest.xml */;
+		name = "ITCStimTest.xml: 13";
+		rLen = 0;
+		rLoc = 1319;
+		rType = 0;
+		vrLen = 5325;
+		vrLoc = 0;
+	};
+	69BEC4B51215B4A900E60974 /* ITCStimTest.xml */ = {
+		isa = PBXFileReference;
+		name = ITCStimTest.xml;
+		path = /Users/maunsell/Development/Experiments/ITCStimTest/ITCStimTest.xml;
+		sourceTree = "<absolute>";
+	};
+	69BEC4B61215B4A900E60974 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 69BEC4B71215B4A900E60974 /* Intervals.xml */;
+		name = "Intervals.xml: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 6220;
+		vrLoc = 22;
+	};
+	69BEC4B71215B4A900E60974 /* Intervals.xml */ = {
+		isa = PBXFileReference;
+		name = Intervals.xml;
+		path = /Users/maunsell/Development/Experiments/Intervals/Intervals.xml;
+		sourceTree = "<absolute>";
+	};
+	69BEC4C01215B4C900E60974 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
-		name = "ITC18StimDevice.cpp: 497";
+		name = "ITC18StimDevice.cpp: 556";
 		rLen = 0;
-		rLoc = 18577;
+		rLoc = 21133;
 		rType = 0;
-		vrLen = 2837;
-		vrLoc = 16207;
+		vrLen = 1619;
+		vrLoc = 20586;
+	};
+	69BEC4D61215B81A00E60974 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
+		name = "ITC18StimDevice.cpp: 554";
+		rLen = 0;
+		rLoc = 21133;
+		rType = 0;
+		vrLen = 1643;
+		vrLoc = 20618;
 	};
 	81BCE9C81180B39E00C0AC5B /* ITC18StimPlugin.h */ = {
 		uiCtxt = {
@@ -571,17 +576,17 @@
 	};
 	81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1198, 7553}}";
-			sepNavSelRange = "{18692, 11}";
-			sepNavVisRange = "{18212, 832}";
+			sepNavIntBoundsRect = "{{0, 0}, {838, 8060}}";
+			sepNavSelRange = "{7630, 0}";
+			sepNavVisRange = "{6952, 1379}";
 			sepNavWindowFrame = "{{15, 4}, {1100, 774}}";
 		};
 	};
 	81BCE9CC1180B3A600C0AC5B /* ITC18StimDevice.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {838, 2119}}";
-			sepNavSelRange = "{928, 0}";
-			sepNavVisRange = "{613, 1651}";
+			sepNavIntBoundsRect = "{{0, 0}, {974, 2288}}";
+			sepNavSelRange = "{4543, 37}";
+			sepNavVisRange = "{3872, 708}";
 			sepNavWindowFrame = "{{15, 4}, {1100, 774}}";
 		};
 	};

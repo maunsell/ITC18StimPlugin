@@ -16,7 +16,7 @@ boost::shared_ptr<mw::Component> ITC18StimDeviceFactory::createObject(std::map<s
 																	  mw::ComponentRegistry *reg) {
 	
 	bool noAlternativeDevice;
-	const char *attributeList[] = {"pretrigger", "train_duration_ms", "current_pulses", "biphasic_pulses",
+	const char *attributeList[] = {"prime", "train_duration_ms", "current_pulses", "biphasic_pulses",
 		"pulse_amplitude", "pulse_width_us", "pulse_freq_hz", "ua_per_v"};
 	mw::GenericDataType typeList[] = {M_BOOLEAN, M_INTEGER, M_BOOLEAN, M_BOOLEAN, M_INTEGER, M_INTEGER, 
 		M_INTEGER, M_INTEGER};
