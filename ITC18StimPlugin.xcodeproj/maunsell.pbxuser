@@ -114,11 +114,12 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 303336761;
-			PBXWorkspaceStateSaveDate = 303336761;
+			PBXPerProjectTemplateStateSaveDate = 303340958;
+			PBXWorkspaceStateSaveDate = 303340958;
 		};
 		perUserProjectItems = {
 			6913A5171201DE6000BCC51C /* PBXTextBookmark */ = 6913A5171201DE6000BCC51C /* PBXTextBookmark */;
+			6945117512149DAB00222B2D /* PBXTextBookmark */ = 6945117512149DAB00222B2D /* PBXTextBookmark */;
 			6950801012005F8700F19EF0 /* PlistBookmark */ = 6950801012005F8700F19EF0 /* PlistBookmark */;
 			6950801112005F8700F19EF0 /* PBXTextBookmark */ = 6950801112005F8700F19EF0 /* PBXTextBookmark */;
 			695081A01200EAE200F19EF0 /* PBXTextBookmark */ = 695081A01200EAE200F19EF0 /* PBXTextBookmark */;
@@ -134,7 +135,6 @@
 			69BEC42012148E9E00E60974 /* PBXTextBookmark */ = 69BEC42012148E9E00E60974 /* PBXTextBookmark */;
 			69BEC42112148E9E00E60974 /* PBXTextBookmark */ = 69BEC42112148E9E00E60974 /* PBXTextBookmark */;
 			69BEC45F12149A3900E60974 /* PBXTextBookmark */ = 69BEC45F12149A3900E60974 /* PBXTextBookmark */;
-			69BEC46012149A3900E60974 /* PBXTextBookmark */ = 69BEC46012149A3900E60974 /* PBXTextBookmark */;
 			69BEC46C12149BDD00E60974 /* PBXTextBookmark */ = 69BEC46C12149BDD00E60974 /* PBXTextBookmark */;
 		};
 		sourceControlManager = 69B24E2F11F0D42F005CD64F /* Source Control */;
@@ -223,6 +223,16 @@
 		path = /Applications/MWServer.app;
 		sourceTree = "<absolute>";
 	};
+	6945117512149DAB00222B2D /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
+		name = "ITC18StimDevice.cpp: 497";
+		rLen = 0;
+		rLoc = 18577;
+		rType = 0;
+		vrLen = 2560;
+		vrLoc = 17322;
+	};
 	6950801012005F8700F19EF0 /* PlistBookmark */ = {
 		isa = PlistBookmark;
 		fRef = 8D5B49B7048680CD000E48DA /* Info.plist */;
@@ -250,11 +260,6 @@
 		name = ITC18.h;
 		path = /Developer/SDKs/MacOSX10.6.sdk/Library/Frameworks/ITC.framework/Headers/ITC18.h;
 		sourceTree = "<absolute>";
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {823, 6110}}";
-			sepNavSelRange = "{1926, 14}";
-			sepNavVisRange = "{1427, 929}";
-		};
 	};
 	695081A01200EAE200F19EF0 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -508,7 +513,7 @@
 		ignoreCount = 0;
 		lineNumber = 361;
 		location = ITC18StimPlugin;
-		modificationTime = 303338744.738504;
+		modificationTime = 303338744.7385041;
 		originalNumberOfMultipleMatches = 1;
 		state = 2;
 	};
@@ -518,11 +523,6 @@
 		name = stdlib.h;
 		path = /Developer/SDKs/MacOSX10.6.sdk/usr/include/stdlib.h;
 		sourceTree = "<absolute>";
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {974, 4823}}";
-			sepNavSelRange = "{5177, 0}";
-			sepNavVisRange = "{4755, 652}";
-		};
 	};
 	69BEC45F12149A3900E60974 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -533,16 +533,6 @@
 		rType = 0;
 		vrLen = 1732;
 		vrLoc = 4287;
-	};
-	69BEC46012149A3900E60974 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */;
-		name = "ITC18StimDevice.cpp: 497";
-		rLen = 0;
-		rLoc = 18553;
-		rType = 0;
-		vrLen = 2745;
-		vrLoc = 17472;
 	};
 	69BEC46C12149BDD00E60974 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -556,8 +546,8 @@
 	};
 	81BCE9C81180B39E00C0AC5B /* ITC18StimPlugin.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {919, 530}}";
-			sepNavSelRange = "{186, 32}";
+			sepNavIntBoundsRect = "{{0, 0}, {670, 691}}";
+			sepNavSelRange = "{0, 0}";
 			sepNavVisRange = "{0, 406}";
 		};
 	};
@@ -571,9 +561,9 @@
 	};
 	81BCE9CB1180B3A600C0AC5B /* ITC18StimDevice.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1198, 7553}}";
-			sepNavSelRange = "{18692, 11}";
-			sepNavVisRange = "{18212, 832}";
+			sepNavIntBoundsRect = "{{0, 0}, {820, 7784}}";
+			sepNavSelRange = "{18577, 0}";
+			sepNavVisRange = "{17322, 2560}";
 			sepNavWindowFrame = "{{15, 4}, {1100, 774}}";
 		};
 	};
