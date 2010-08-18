@@ -54,20 +54,24 @@ using namespace mw;
 /********************************************************************************************************************
  External functions for scheduling.  Placed up here because I haven't figured out the correct declaration syntax.
  ********************************************************************************************************************/
-/*
-void *readLaunch(const shared_ptr<ITC18StimDevice> &pITC18StimDevice) {
+
+void *readLaunch(const weak_ptr<ITC18StimDevice> &pITC18StimDevice) {
 	
-	pITC18StimDevice->readData();
+	shared_ptr <ITC18StimDevice> sp = pITC18StimDevice.lock();
+	sp->readData();
+	sp.reset();
+
 	return NULL;
 }
-*/
+
 /********************************************************************************************************************
  Constructor and destructor functions
 ********************************************************************************************************************/
 
 ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 								 const boost::shared_ptr <Scheduler> &a_scheduler,
-                                 const boost::shared_ptr <Variable> _preTrigger,
+                                 const boost::shared_ptr <Variable> _prime,
+                                 const boost::shared_ptr <Variable> _running,
                                  const boost::shared_ptr <Variable> _train_duration_ms,
                                  const boost::shared_ptr <Variable> _current_pulses,
                                  const boost::shared_ptr <Variable> _biphasic_pulses, 
@@ -81,7 +85,8 @@ ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 	}
 	noAlternativeDevice = _noAlternativeDevice;
 	scheduler = a_scheduler;
-	preTrigger = _preTrigger;
+	prime = _prime;
+	running = _running;
 	trainDurationMS = _train_duration_ms;
 	currentPulses = _current_pulses;
 	biphasicPulses = _biphasic_pulses;
@@ -91,6 +96,7 @@ ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 	UAPerV = _ua_per_v;
 
 	ITC18Running = false;
+	running->setValue(false);
 	itc = NULL;
 }
 
@@ -135,8 +141,7 @@ bool ITC18StimDevice::initialize() {
 	if (itc == NULL && noAlternativeDevice) {
         mprintf("ITC18StimDevice::initialize: no ITC18 or alternative device, running without ITC18 hardware");
 	}
-	markParametersDirty();								// flag that instructions need to be made
-	checkParameters();									// and make and load those instructions
+	loadInstructions();									// and make and load those instructions
 	return ((itc != NULL) || noAlternativeDevice);
 }
 
@@ -154,46 +159,16 @@ void ITC18StimDevice::variableSetup() {
 	this->pulseFreqHz->addNotification(notif);
 	this->UAPerV->addNotification(notif);
 	
-	// preTrigger
+	// prime the instructions
     
 	weak_ptr<ITC18StimDevice> weak_self_ref3(getSelfPtr<ITC18StimDevice>());
-	shared_ptr<VariableNotification> notif3(new ITC18StimDevicePreTriggerNotification(weak_self_ref3));
-	this->preTrigger->addNotification(notif3); 
+	shared_ptr<VariableNotification> notif3(new ITC18StimDevicePrimeNotification(weak_self_ref3));
+	this->prime->addNotification(notif3); 
 }
 
 /********************************************************************************************************************
  Object functions
 ********************************************************************************************************************/
-
-// Check whether stimulus parameters have changed and make new ITC18 instructions as needed
-
-void ITC18StimDevice::checkParameters(void) {
-	
-	PulseTrainData train;
-	
-//	if (!parametersDirty) {
-//		mprintf(" ITC18StimDevice:checkParameters -- nothing has changed");
-//		return;
-//	}
-	mprintf(" ITC18StimDevice:checkParameters -- needs new instructions");
-	train.currentPulses = currentPulses->getValue();				// true for current, false for voltage
-	train.amplitude = pulseAmplitude->getValue();
-	train.DAChannel = 0;
-	train.doPulseMarkers = true;
-	train.doGate = true;
-	train.durationMS = trainDurationMS->getValue();
-	train.frequencyHZ = pulseFreqHz->getValue();
-	train.fullRangeV = POSITIVEVOLT;
-	train.gateBit = 0;
-	train.gatePorchMS = 25;
-	train.pulseBiphasic = biphasicPulses->getValue();
-	train.pulseMarkerBit = 1;
-	train.pulseWidthUS = pulseWidthUS->getValue();
-	train.UAPerV = UAPerV->getValue();
-
-	makeInstructionsFromTrainData(&train, 1L);
-	parametersDirty = false;
-}
 
 // Close the ITC18.  We do a round-about with the pointers to make sure that the
 // pointer is nulled out before we close the ITC.  This is needed so that interrupt
@@ -219,6 +194,7 @@ int	ITC18StimDevice::getAvailable() {
 
 	int available, overflow;
 	
+	boost::mutex::scoped_lock lock(ITC18DeviceLock);
 	ITC18_GetFIFOReadAvailableOverflow(itc, &available, &overflow);
 	if (overflow != 0) {
         merror(M_IODEVICE_MESSAGE_DOMAIN, "ITC18StimDevice::getAvailable: Fatal FIFO overflow.");
@@ -227,10 +203,232 @@ int	ITC18StimDevice::getAvailable() {
 	return available;
 }
 
+// Load ITC18 with instructions based on current stimulus parameters 
+
+void ITC18StimDevice::loadInstructions(void) {
+	
+	PulseTrainData train;
+	
+	train.currentPulses = currentPulses->getValue();				// true for current, false for voltage
+	train.amplitude = pulseAmplitude->getValue();
+	train.DAChannel = 0;
+	train.doPulseMarkers = true;
+	train.doGate = true;
+	train.durationMS = trainDurationMS->getValue();
+	train.frequencyHZ = pulseFreqHz->getValue();
+	train.fullRangeV = POSITIVEVOLT;
+	train.gateBit = 0;
+	train.gatePorchMS = 25;
+	train.pulseBiphasic = biphasicPulses->getValue();
+	train.pulseMarkerBit = 1;
+	train.pulseWidthUS = pulseWidthUS->getValue();
+	train.UAPerV = UAPerV->getValue();
+	
+	loadInstructionsFromTrainData(&train, 1L);
+	parametersDirty = false;
+}
+
+/* 
+ Make the instruction sequence for the ITC18 and load the ITC18 so it is ready to run
+ 
+ activeChannels specifies how many of the ITC18 DACs will be used to output pulse trains. pTrain is an arrany of
+ PulseTrainData structures that give the parameters for each channel.  However, channels are currently forced to the
+ same values for: doGate, gateBit, gatePorchMS, doPulseMarkers, pulseMarkerBit, pulseBiphasic, durationMS, 
+ pulseWidthUS, and frequencyHZ.  The only values that are independent by channel are: DACChanel, amplitude, 
+ fullRangeV, currentPulses, and UAPerV.  The shared entries are taken from the first PulseTrainData struct in pTrain, 
+ and ignored in subsequent structs.
+ */
+
+bool ITC18StimDevice::loadInstructionsFromTrainData(PulseTrainData *pTrain, long activeChannels) {
+	
+	short values[kMaxChannels + 1], gateAndPulseBits, gateBits, *sPtr, *tPtr;
+	long index, sampleSetsInTrain, sampleSetsPerPhase, sampleSetIndex, sampleSetsPerPulse, ticksPerInstruction;
+	long gatePorchUS, sampleSetsInPorch, porchBufferLength;
+	long pulseCount, durationUS, instructionsPerSampleSet, valueIndex;
+	int writeAvailable, result;
+	float sampleSetPeriodUS, instructionPeriodUS, pulsePeriodUS, rangeFraction[kMaxChannels];
+	short *trainValues, *pulseValues, *porchValues;
+	int ITCInstructions[kMaxChannels + 1];
+	if (itc == NULL && !kDebugITC18StimDevice) { 
+		return false; 
+	}
+	
+	samplesReady = false;										// flag no samples are ready
+	
+	// We take common values from the first entry, on the assumption that others have been checked and are the same
+	
+	channels = min(activeChannels, ITC18_NUMBEROFDACOUTPUTS);
+	instructionsPerSampleSet = channels + 1;			// one per DAC, plus one for digital out
+	gatePorchUS = (pTrain->doGate) ? pTrain->gatePorchMS * 1000.0 : 0;
+	durationUS = pTrain->durationMS * 1000.0;
+	
+	// First determine the DASample period.  The instructions specify the entire stimulus train, plus the front and
+	// back porches for the gate.  We require the entire stimulus instruction to fit within the ITC-18 FIFO.
+	// Starting with the fastest tick rate, we divide down to allow for enough DA (channels) and Digital (1) 
+	// samples, and a factor of safety (2x)
+	
+    
+	ticksPerInstruction = ITC18_MINIMUM_TICKS;
+	while ((durationUS + 2 * gatePorchUS) / (kITC18TickTimeUS * ticksPerInstruction) > 
+		   FIFOSize / (instructionsPerSampleSet * 2)) {
+		ticksPerInstruction++;
+	}
+	if (ticksPerInstruction > ITC18_MAXIMUM_TICKS) {
+		return false;
+	}
+	
+	// Precompute values.  Every portion of the stimulus has an integer number of sample sets.
+	
+	instructionPeriodUS = ticksPerInstruction * kITC18TickTimeUS;
+	sampleSetPeriodUS = instructionPeriodUS * instructionsPerSampleSet;
+	sampleSetsPerPhase = round(pTrain->pulseWidthUS / sampleSetPeriodUS);
+	sampleSetsPerPulse = sampleSetsPerPhase * ((pTrain->pulseBiphasic) ? 2 : 1);
+	sampleSetsInPorch = gatePorchUS / sampleSetPeriodUS;		// DA samples in each gate porch
+	sampleSetsInTrain = durationUS / sampleSetPeriodUS;		// DA samples in train
+	bufferLengthSets = sampleSetsInTrain + 2 * sampleSetsInPorch;
+	pulsePeriodUS = ((pTrain->frequencyHZ > 0) ? 1.0 / pTrain->frequencyHZ * 1000000.0 : 0);
+	gateBits = ((pTrain->doGate) ? (0x1 << pTrain->gateBit) : 0);
+	gateAndPulseBits = gateBits | ((pTrain->doPulseMarkers) ? (0x1 << pTrain->pulseMarkerBit) : 0);
+	
+	// Create and load an array with instructions that make up one pulse (DA and digital)
+	
+	if (sampleSetsPerPulse > 0) {
+		for (index = 0; index < channels; index++) {
+			rangeFraction[index] = (pTrain[index].amplitude / pTrain[index].fullRangeV) /
+			((pTrain[index].currentPulses) ? pTrain[index].UAPerV : 1000);
+		}
+		assert(pulseValues = (short *)calloc(sampleSetsPerPulse * instructionsPerSampleSet, sizeof(short)));
+		for (index = 0; index < channels; index++) {			// create first phase instruction set
+			values[index] = rangeFraction[index] * 0x7fff;		//	force fractions positive for first phase
+		}
+		values[index] = gateAndPulseBits;						//	digital output word
+		for (sampleSetIndex = 0; sampleSetIndex < sampleSetsPerPhase; sampleSetIndex++) {	// load first phase
+			replaceShortsInRange(pulseValues, values, sampleSetIndex * instructionsPerSampleSet, 
+								 instructionsPerSampleSet);
+		}
+		if (pTrain->pulseBiphasic) {							// do second phase for biphasic pulses
+			for (index = 0; index < channels; index++) {
+				values[index] = -rangeFraction[index] * 0x7fff;		// invert amplitude
+			}
+			values[index] = gateAndPulseBits;						// digital output word
+			for (sampleSetIndex = 0; sampleSetIndex < sampleSetsPerPhase; sampleSetIndex++) {
+				replaceShortsInRange(pulseValues, values, 
+									 (sampleSetsPerPhase + sampleSetIndex) * instructionsPerSampleSet, 
+									 instructionsPerSampleSet);
+			}
+		}
+	}
+	/*
+	 mprintf("instructionsPerSet %d, setsPerPulse %d", instructionsPerSampleSet, sampleSetsPerPulse);
+	 for (index = 49000; index < (sampleSetsPerPulse * instructionsPerSampleSet) - 8; index += 8) {
+	 mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", 
+	 pulseValues[index + 0], pulseValues[index + 1], pulseValues[index + 2], pulseValues[index + 3], 
+	 pulseValues[index + 4], pulseValues[index + 5], pulseValues[index + 6], pulseValues[index + 7]);
+	 }
+	 for ( ; index < sampleSetsPerPulse * instructionsPerSampleSet; index++) {
+	 mprintf("%4hx", pulseValues[index]);
+	 }
+	 */	
+	// Create an array with the entire output sequence.  If there is a gating signal,
+	// we add that to the digital output values.  bufferLengthSamples is always at least 
+	// as long as instructionsPerSampleSet.
+	
+	bufferLengthSamples = max(sampleSetsInTrain * instructionsPerSampleSet, instructionsPerSampleSet);
+	assert(trainValues = (short *)calloc(bufferLengthSamples, sizeof(short)));
+	if (gateBits > 0) {									// load digital output commands for the gate (if any)
+		for (sPtr = trainValues, index = 0; index < sampleSetsInTrain; index++) {
+			sPtr += channels;							// skip over analog values
+			*(sPtr)++ = gateBits;						// set the gate bits
+		}
+	}
+	
+	// Add the pulses to the train instructions.  If the stimulation frequency is zero, or the train duration
+	// is less than one pulse, or the pulse width is zero, do nothing.
+	
+	if ((pulsePeriodUS > 0) && (sampleSetsPerPhase > 0)) {
+		for (pulseCount = 0; ; pulseCount++) {
+			sampleSetIndex = pulseCount * pulsePeriodUS / sampleSetPeriodUS;	// find offset in instructions
+			valueIndex = sampleSetIndex * instructionsPerSampleSet;
+			if ((valueIndex + sampleSetsPerPulse * ((pTrain->pulseBiphasic) ? 2 : 1) + 1) >= bufferLengthSamples) {
+				break;										// no room for another pulse
+			}
+			replaceShortsInRange(trainValues, pulseValues, valueIndex,  sampleSetsPerPulse * instructionsPerSampleSet);
+		}
+	}
+	
+	free(pulseValues);
+	
+	// If there the gate has a front and back porch, add the porches to the instructions.  Make a buffer that is big
+	// enough for the stimulus train and the front and back porches, make the front porch, then copy the stimulus 
+	// train, then copy the front porch to the back porch.
+	
+	if (sampleSetsInPorch > 0) {
+		porchBufferLength = sampleSetsInPorch * instructionsPerSampleSet;
+		assert(porchValues = (short *)calloc((2 * porchBufferLength + bufferLengthSamples), sizeof(short)));
+		sPtr = porchValues;
+		for (index = 0; index < sampleSetsInPorch; index++) {
+			sPtr += channels;							// skip over analog values
+			*(sPtr)++ = gateBits;						// set the gate bits
+		}
+		for (tPtr = trainValues, index = 0; index < bufferLengthSamples; index++) {
+			*sPtr++ = *tPtr++;
+		}
+		for (tPtr = porchValues, index = 0; index < porchBufferLength; index++) {
+			*sPtr++ = *tPtr++;
+		}
+		free(trainValues);								// release unneeded data
+		trainValues = porchValues;						// make trainValues point to the whole set
+		bufferLengthSamples += 2 * porchBufferLength;		// tally the buffer length with both porches
+	}
+	
+	// Change the last digital output word in the back gate porch to close gate (in case it's open)
+	
+	trainValues[bufferLengthSamples - 1] = 0x00;
+	
+	// Set up the ITC for the stimulus train.  Do everything except the start
+	
+	for (index = 0; index < channels; index++) {
+		ITCInstructions[index] = DAInstructions[pTrain[index].DAChannel] | ITC18_OUTPUT_UPDATE;
+		//		ADInstructions[pTrain[index].DAChannel] | DAInstructions[pTrain[index].DAChannel] | 
+		//		ITC18_INPUT_UPDATE | ITC18_OUTPUT_UPDATE;
+	} 
+	ITCInstructions[index] = ITC18_OUTPUT_DIGITAL1 | ITC18_INPUT_SKIP | ITC18_OUTPUT_UPDATE;
+	if (itc != NULL) {									// don't access ITC if we're debugging
+		boost::mutex::scoped_lock lock(ITC18DeviceLock);
+		ITC18_SetSequence(itc, channels + 1, ITCInstructions); 
+		ITC18_StopAndInitialize(itc, true, true);
+		ITC18_GetFIFOWriteAvailable(itc, &writeAvailable);
+		if (writeAvailable < sampleSetsInTrain) {
+			merror(M_IODEVICE_MESSAGE_DOMAIN, "LLITC18PulseTrainDevice: ITC18 write buffer was full.");
+			free(trainValues);
+			return false;
+		}
+		result = ITC18_WriteFIFO(itc, bufferLengthSamples, trainValues);
+		if (result != noErr) { 
+			mprintf("Error ITC18_WriteFIFO, result: %d", result);
+			free(trainValues);
+			return false;
+		}
+		ITC18_SetSamplingInterval(itc, ticksPerInstruction, false);
+	}	
+	/*	
+	 for (index = 49000; index < bufferLengthSamples - 8; index += 8) {
+	 mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", 
+	 trainValues[index + 0], trainValues[index + 1], trainValues[index + 2], trainValues[index + 3], 
+	 trainValues[index + 4], trainValues[index + 5], trainValues[index + 6], trainValues[index + 7]);
+	 }
+	 for ( ; index < bufferLengthSamples; index++) {
+	 mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", trainValues[index]);
+	 }
+	 */
+	free(trainValues);
+	primed = true;
+	return true;
+}
+
 void ITC18StimDevice::markParametersDirty(void) {
 	
 	parametersDirty = true;
-	mprintf("marking parameters dirty");
 }
 
 // Open and initialize the ITC18 -- success is indicated by a non-NULL value in itc.
@@ -281,47 +479,56 @@ void ITC18StimDevice::openITC18(void) {
 
 // For now we have not included reading of AD samples.  This could be added in the future if MWorks is up to it.
 
-/*
-
 bool ITC18StimDevice::readData(void) {
 	
-	short index, *pSamples;
-	long sets, set;
-	int available;
-	static bool garbageFlushed = false;
+//	short index, *pSamples;
+//	long sets, set;
+//	int available;
+//	static bool garbageFlushed = false;
 	
-	if (itc == NULL || !ITC18Running) {
+	if (itc == NULL || !running->getValue()) {
 		return false;
 	}
 	
 	// When a sequence is started, the first three entries in the FIFO are garbage.  They should be thrown out.  
 	
-	boost::mutex::scoped_lock lock(ITC18DeviceLock);
-	available = getAvailable();
-	if (!garbageFlushed) {
+	if (getAvailable() > kGarbageLength + bufferLengthSamples + 1) {
+//		running->setValue(false);
+		stopDeviceIO();
+		return true;
+	}
+	else {
+		mprintf("bufferLengthSamples %d; available %d", bufferLengthSamples, getAvailable());
+		return false;
+	}
+/*
+ if (!garbageFlushed) {
 		if (available < kGarbageLength + 1) {
 			return false;
 		}
-		ITC18_ReadFIFO(itc, kGarbageLength, samples);
+//		ITC18_ReadFIFO(itc, kGarbageLength, samples);
 		garbageFlushed = true;
 		available = getAvailable();
 	}
 	
 	// Wait for the stimulus to be over.
 	
-	if ((available = getAvailable()) < bufferLengthBytes) {
+	
+	if ((available = getAvailable()) < bufferLengthSamples) {
 		return false;
 	}
+	
+	return false;
 	
 	// When all the samples are available, read them and unpack them
 	// Initialize buffers for reading values;
 	
-	samples = (short *)malloc(sizeof(short) * bufferLengthBytes);
+	samples = (short *)malloc(sizeof(short) * bufferLengthSamples);
 	for (index = 0; index < channels; index++) {
 		channelSamples[index] = (short *)malloc(sizeof(short) * bufferLengthSets);
 	}
 	
-	ITC18_ReadFIFO(itc, bufferLengthBytes, samples);							// read all available sets
+	ITC18_ReadFIFO(itc, bufferLengthSamples, samples);							// read all available sets
 	for (set = 0; set < sets; set++) {									// process each set
 		pSamples = &samples[(channels + 1) * set];						// point to start of a set
 		for (index = 0; index < channels; index++) {					// for every channel
@@ -330,20 +537,19 @@ bool ITC18StimDevice::readData(void) {
 	}
 	samplesReady = true;
 	
-	// ??? We need to figure out how to get these data available to MWorks.  For now, just throw them away.
-	
 	free(samples);
 	for (index = 0; index < channels; index++) {
 		free(channelSamples[index]);
 	}
 	return true;
+*/
 }
-
- */
 
 // Start the scheduled IO on the ITC18StimDevice.  This starts a thread that reads the input ports
 
 bool ITC18StimDevice::startDeviceIO(void) {
+	
+//	bool runState;
 	
 	if (VERBOSE_IO_DEVICE >= 1) {
 		mprintf("ITC18StimDevice: startDeviceIO");
@@ -357,14 +563,26 @@ bool ITC18StimDevice::startDeviceIO(void) {
 	if (itc == NULL) {
 		return false;
 	}
+	if (!primed) {
+		loadInstructions();
+	}
 	boost::mutex::scoped_lock lock(ITC18DeviceLock); 
 	ITC18Running = true;
+	running->setValue(true);
+//	runState = running->getValue();
+//	mprintf("  ITC18StimDevice: startDeviceIO, running is %d", runState);
 	ITC18_Start(itc, false, true, false, false);				// Start ITC-18, no external trigger, output enabled
-//	 shared_ptr<ITC18StimDevice> this_one = shared_from_this();
-//	 pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, (MWTime)0, kITC18ReadPeriodUS,
-//						M_REPEAT_INDEFINITELY, boost::bind(readLaunch, this_one), M_DEFAULT_IODEVICE_PRIORITY,
-//						kReadTaskWarnSlopUS, kReadTaskFailSlopUS, M_MISSED_EXECUTION_DROP);
-//	schedule_nodes.push_back(pollScheduleNode);       
+	shared_ptr<ITC18StimDevice> this_one = shared_from_this();
+	pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, 
+											 (MWTime)0, 
+											 kITC18ReadPeriodUS,
+											 M_REPEAT_INDEFINITELY, 
+											 boost::bind(readLaunch, weak_ptr<ITC18StimDevice>(this_one)), 
+											 M_DEFAULT_IODEVICE_PRIORITY,
+											 kReadTaskWarnSlopUS, 
+											 kReadTaskFailSlopUS, 
+											 M_MISSED_EXECUTION_DROP);
+	primed = false;
 	return true;
 }
 
@@ -379,209 +597,15 @@ bool ITC18StimDevice::stopDeviceIO() {
 	// stop all the scheduled DI checking (i.e. stop calls to "updateChannel")
 	
 	if (pollScheduleNode != NULL) {
-		boost::mutex::scoped_lock(pollScheduleNodeLock);
+		boost::mutex::scoped_lock lock1(pollScheduleNodeLock);
         pollScheduleNode->cancel();
     }
-	boost::mutex::scoped_lock lock(ITC18DeviceLock); 
+	boost::mutex::scoped_lock lock2(ITC18DeviceLock); 
 	if (itc != NULL) {
 		ITC18_Stop(itc);
 	}
+	running->setValue(false);
 	ITC18Running = false;
-	return true;
-}
-
-/* 
- Make the instruction sequence for the ITC18.
- 
- activeChannels specifies how many of the ITC18 DACs will be used to output pulse trains. pTrain is an arrany of
- PulseTrainData structures that give the parameters for each channel.  However, channels are currently forced to the
- same values for: doGate, gateBit, gatePorchMS, doPulseMarkers, pulseMarkerBit, pulseBiphasic, durationMS, 
- pulseWidthUS, and frequencyHZ.  The only values that are independent by channel are: DACChanel, amplitude, 
- fullRangeV, currentPulses, and UAPerV.  The shared entries are taken from the first PulseTrainData struct in pTrain, 
- and ignored in subsequent structs.
- */
- 
-bool ITC18StimDevice::makeInstructionsFromTrainData(PulseTrainData *pTrain, long activeChannels) {
-
-	short values[kMaxChannels + 1], gateAndPulseBits, gateBits, *sPtr, *tPtr;
-	long index, sampleSetsInTrain, sampleSetsPerPhase, sampleSetIndex, sampleSetsPerPulse, ticksPerInstruction;
-	long gatePorchUS, sampleSetsInPorch, porchBufferLength;
-	long pulseCount, durationUS, instructionsPerSampleSet, valueIndex;
-	int writeAvailable, result;
-	float sampleSetPeriodUS, instructionPeriodUS, pulsePeriodUS, rangeFraction[kMaxChannels];
-	short *trainValues, *pulseValues, *porchValues;
-	int ITCInstructions[kMaxChannels + 1];
-	
-	if (itc == NULL && !kDebugITC18StimDevice) { 
-		return false; 
-	}
-	samplesReady = false;										// flag no samples are ready
-	
-	// We take common values from the first entry, on the assumption that others have been checked and are the same
-	
-	channels = min(activeChannels, ITC18_NUMBEROFDACOUTPUTS);
-	instructionsPerSampleSet = channels + 1;			// one per DAC, plus one for digital out
-	gatePorchUS = (pTrain->doGate) ? pTrain->gatePorchMS * 1000.0 : 0;
-	durationUS = pTrain->durationMS * 1000.0;
-	
-	// First determine the DASample period.  The instructions specify the entire stimulus train, plus the front and
-	// back porches for the gate.  We require the entire stimulus instruction to fit within the ITC-18 FIFO.
-	// Starting with the fastest tick rate, we divide down to allow for enough DA (channels) and Digital (1) 
-	// samples, and a factor of safety (2x)
-
-    
-	ticksPerInstruction = ITC18_MINIMUM_TICKS;
-	while ((durationUS + 2 * gatePorchUS) / (kITC18TickTimeUS * ticksPerInstruction) > 
-																FIFOSize / (instructionsPerSampleSet * 2)) {
-		ticksPerInstruction++;
-	}
-	if (ticksPerInstruction > ITC18_MAXIMUM_TICKS) {
-		return false;
-	}
-
-	// Precompute values.  Every portion of the stimulus has an integer number of sample sets.
-	
-	instructionPeriodUS = ticksPerInstruction * kITC18TickTimeUS;
-	sampleSetPeriodUS = instructionPeriodUS * instructionsPerSampleSet;
-	sampleSetsPerPhase = round(pTrain->pulseWidthUS / sampleSetPeriodUS);
-	sampleSetsPerPulse = sampleSetsPerPhase * ((pTrain->pulseBiphasic) ? 2 : 1);
-	sampleSetsInPorch = gatePorchUS / sampleSetPeriodUS;		// DA samples in each gate porch
-	sampleSetsInTrain = durationUS / sampleSetPeriodUS;		// DA samples in train
-	bufferLengthSets = sampleSetsInTrain + 2 * sampleSetsInPorch;
-	pulsePeriodUS = ((pTrain->frequencyHZ > 0) ? 1.0 / pTrain->frequencyHZ * 1000000.0 : 0);
-	gateBits = ((pTrain->doGate) ? (0x1 << pTrain->gateBit) : 0);
-	gateAndPulseBits = gateBits | ((pTrain->doPulseMarkers) ? (0x1 << pTrain->pulseMarkerBit) : 0);
-		
-	// Create and load an array with instructions that make up one pulse (DA and digital)
-	
-	if (sampleSetsPerPulse > 0) {
-		for (index = 0; index < channels; index++) {
-			rangeFraction[index] = (pTrain[index].amplitude / pTrain[index].fullRangeV) /
-			((pTrain[index].currentPulses) ? pTrain[index].UAPerV : 1000);
-		}
-		assert(pulseValues = (short *)malloc(sampleSetsPerPulse * instructionsPerSampleSet * sizeof(short)));
-		for (index = 0; index < channels; index++) {			// create first phase instruction set
-			values[index] = rangeFraction[index] * 0x7fff;		//	force fractions positive for first phase
-		}
-		values[index] = gateAndPulseBits;						//	digital output word
-		for (sampleSetIndex = 0; sampleSetIndex < sampleSetsPerPhase; sampleSetIndex++) {	// load first phase
-			replaceShortsInRange(pulseValues, values, sampleSetIndex * instructionsPerSampleSet, 
-																	instructionsPerSampleSet);
-		}
-		if (pTrain->pulseBiphasic) {							// do second phase for biphasic pulses
-			for (index = 0; index < channels; index++) {
-				values[index] = -rangeFraction[index] * 0x7fff;		// invert amplitude
-			}
-			values[index] = gateAndPulseBits;						// digital output word
-			for (sampleSetIndex = 0; sampleSetIndex < sampleSetsPerPhase; sampleSetIndex++) {
-				replaceShortsInRange(pulseValues, values, 
-									 (sampleSetsPerPhase + sampleSetIndex) * instructionsPerSampleSet, 
-									 instructionsPerSampleSet);
-			}
-		}
-	}
-	mprintf("instructionsPerSet %d, setsPerPulse %d", instructionsPerSampleSet, sampleSetsPerPulse);
-	for (index = 49000; index < (sampleSetsPerPulse * instructionsPerSampleSet) - 8; index += 8) {
-		mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", 
-				pulseValues[index + 0], pulseValues[index + 1], pulseValues[index + 2], pulseValues[index + 3], 
-				pulseValues[index + 4], pulseValues[index + 5], pulseValues[index + 6], pulseValues[index + 7]);
-	}
-	for ( ; index < sampleSetsPerPulse * instructionsPerSampleSet; index++) {
-		mprintf("%4hx", pulseValues[index]);
-	}
-	
-	// Create an array with the entire output sequence.  If there is a gating signal,
-	// we add that to the digital output values.  bufferLengthBytes is always at least as long as instructionsPerSampleSet.
-	
-	bufferLengthBytes = max(sampleSetsInTrain * instructionsPerSampleSet, instructionsPerSampleSet);
-	assert(trainValues = (short *)calloc(bufferLengthBytes, sizeof(short)));
-	if (gateBits > 0) {									// load digital output commands for the gate (if any)
-		for (sPtr = trainValues, index = 0; index < sampleSetsInTrain; index++) {
-			sPtr += channels;							// skip over analog values
-			*(sPtr)++ = gateBits;						// set the gate bits
-		}
-	}
-	
-	// Add the pulses to the train instructions.  If the stimulation frequency is zero, or the train duration
-	// is less than one pulse, or the pulse width is zero, do nothing.
-
-	if ((pulsePeriodUS > 0) && (sampleSetsPerPhase > 0)) {
-		for (pulseCount = 0; ; pulseCount++) {
-			sampleSetIndex = pulseCount * pulsePeriodUS / sampleSetPeriodUS;	// find offset in instructions
-			valueIndex = sampleSetIndex * instructionsPerSampleSet;
-			if ((valueIndex + sampleSetsPerPulse * ((pTrain->pulseBiphasic) ? 2 : 1) + 1) >= bufferLengthBytes) {
-				break;										// no room for another pulse
-			}
-			replaceShortsInRange(trainValues, pulseValues, valueIndex,  sampleSetsPerPulse * instructionsPerSampleSet);
-		}
-	}
-	
-	free(pulseValues);
-	
-	// If there the gate has a front and back porch, add the porches to the instructions.  Make a buffer that is big
-	// enough for the stimulus train and the front and back porches, make the front porch, then copy the stimulus 
-	// train, then copy the front porch to the back porch.
-	
-	if (sampleSetsInPorch > 0) {
-		porchBufferLength = sampleSetsInPorch * instructionsPerSampleSet;
-		assert(porchValues = (short *)malloc((2 * porchBufferLength + bufferLengthBytes) * sizeof(short)));
-		sPtr = porchValues;
-		for (index = 0; index < sampleSetsInPorch; index++) {
-			sPtr += channels;							// skip over analog values
-			*(sPtr)++ = gateBits;						// set the gate bits
-		}
-		for (tPtr = trainValues, index = 0; index < bufferLengthBytes; index++) {
-			*sPtr++ = *tPtr++;
-		}
-		for (tPtr = porchValues, index = 0; index < porchBufferLength; index++) {
-			*sPtr++ = *tPtr++;
-		}
-		free(trainValues);								// release unneeded data
-		trainValues = porchValues;						// make trainValues point to the whole set
-		bufferLengthBytes += 2 * porchBufferLength;		// tally the buffer length with both porches
-	}
-	
-	// Change the last digital output word in the back gate porch to close gate (in case it's open)
-	
-	trainValues[bufferLengthBytes - 1] = 0x00;
-	
-	// Set up the ITC for the stimulus train.  Do everything except the start
-	
-	for (index = 0; index < channels; index++) {
-		ITCInstructions[index] = DAInstructions[pTrain[index].DAChannel] | ITC18_OUTPUT_UPDATE;
-//		ADInstructions[pTrain[index].DAChannel] | DAInstructions[pTrain[index].DAChannel] | 
-//		ITC18_INPUT_UPDATE | ITC18_OUTPUT_UPDATE;
-	} 
-	ITCInstructions[index] = ITC18_OUTPUT_DIGITAL1 | ITC18_INPUT_SKIP | ITC18_OUTPUT_UPDATE;
-	if (itc != NULL) {									// don't access ITC if we're debugging
-		boost::mutex::scoped_lock lock(ITC18DeviceLock);
-		ITC18_SetSequence(itc, channels + 1, ITCInstructions); 
-		ITC18_StopAndInitialize(itc, true, true);
-		ITC18_GetFIFOWriteAvailable(itc, &writeAvailable);
-		if (writeAvailable < sampleSetsInTrain) {
-			merror(M_IODEVICE_MESSAGE_DOMAIN, "LLITC18PulseTrainDevice: ITC18 write buffer was full.");
-			free(trainValues);
-			return false;
-		}
-		result = ITC18_WriteFIFO(itc, bufferLengthBytes, trainValues);
-		if (result != noErr) { 
-			mprintf("Error ITC18_WriteFIFO, result: %d", result);
-			free(trainValues);
-		   return false;
-		}
-		ITC18_SetSamplingInterval(itc, ticksPerInstruction, false);
-	}	
-/*	
-	for (index = 49000; index < bufferLengthBytes - 8; index += 8) {
-		mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", 
-				trainValues[index + 0], trainValues[index + 1], trainValues[index + 2], trainValues[index + 3], 
-				trainValues[index + 4], trainValues[index + 5], trainValues[index + 6], trainValues[index + 7]);
-	}
-	for ( ; index < bufferLengthBytes; index++) {
-		mprintf("%4hx %4hx %4hx %4hx %4hx %4hx %4hx %4hx", trainValues[index]);
-	}
-*/
-	free(trainValues);
 	return true;
 }
 
