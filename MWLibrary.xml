@@ -20,9 +20,10 @@
 		
 		<!-- Payload --> 
 		<code>
-			<iodevice tag="ITC18 Stim Device" type="itc18stim" priority="" alt="" prime="" running="" 
-			train_duration_ms="" current_pulses="" biphasic_pulses="" pulse_amplitude="" 
-			pulse_width_us=""  pulse_freq_hz="" ua_per_v="">
+			<iodevice tag="ITC18 Stim Device" type="itc18stim" priority="" alt="" 
+			prime="" run='' running="" train_duration_ms="" current_pulses="" 
+			biphasic_pulses="" pulse_amplitude="" pulse_width_us=""
+			pulse_freq_hz="" ua_per_v="">
 			</iodevice>
 		</code>
 	</MWElement>	

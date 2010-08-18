@@ -71,6 +71,7 @@ void *readLaunch(const weak_ptr<ITC18StimDevice> &pITC18StimDevice) {
 ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 								 const boost::shared_ptr <Scheduler> &a_scheduler,
                                  const boost::shared_ptr <Variable> _prime,
+                                 const boost::shared_ptr <Variable> _run,
                                  const boost::shared_ptr <Variable> _running,
                                  const boost::shared_ptr <Variable> _train_duration_ms,
                                  const boost::shared_ptr <Variable> _current_pulses,
@@ -86,6 +87,7 @@ ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 	noAlternativeDevice = _noAlternativeDevice;
 	scheduler = a_scheduler;
 	prime = _prime;
+	run = _run;
 	running = _running;
 	trainDurationMS = _train_duration_ms;
 	currentPulses = _current_pulses;
@@ -96,6 +98,7 @@ ITC18StimDevice::ITC18StimDevice(bool _noAlternativeDevice,
 	UAPerV = _ua_per_v;
 
 	ITC18Running = false;
+	run->setValue(false);
 	running->setValue(false);
 	itc = NULL;
 }
@@ -159,16 +162,38 @@ void ITC18StimDevice::variableSetup() {
 	this->pulseFreqHz->addNotification(notif);
 	this->UAPerV->addNotification(notif);
 	
-	// prime the instructions
+	// set up to detect requests to prime the instructions
+    
+	weak_ptr<ITC18StimDevice> weak_self_ref2(getSelfPtr<ITC18StimDevice>());
+	shared_ptr<VariableNotification> notif2(new ITC18StimDevicePrimeNotification(weak_self_ref2));
+	this->prime->addNotification(notif2); 
+	
+	// set up to detect requests to run the stimulus
     
 	weak_ptr<ITC18StimDevice> weak_self_ref3(getSelfPtr<ITC18StimDevice>());
-	shared_ptr<VariableNotification> notif3(new ITC18StimDevicePrimeNotification(weak_self_ref3));
-	this->prime->addNotification(notif3); 
+	shared_ptr<VariableNotification> notif3(new ITC18StimDeviceRunNotification(weak_self_ref3));
+	this->run->addNotification(notif3); 
 }
 
 /********************************************************************************************************************
  Object functions
 ********************************************************************************************************************/
+
+// Start the stimulus when "run" is set true.  Do nothing if it is set false.  The only way to stop the stimulus
+// is to let it self terminate or call stopDeviceIO.
+
+void ITC18StimDevice::changeRunState(void) {
+	
+	if (itc == NULL) {
+		return;
+	}
+	if (run->getValue()) {					// command to start run
+		startStimulus();
+	}
+//	else {									// command to shut down
+//		stopStimulus();
+//	}
+}
 
 // Close the ITC18.  We do a round-about with the pointers to make sure that the
 // pointer is nulled out before we close the ITC.  This is needed so that interrupt
@@ -481,10 +506,6 @@ void ITC18StimDevice::openITC18(void) {
 
 bool ITC18StimDevice::readData(void) {
 	
-//	short index, *pSamples;
-//	long sets, set;
-//	int available;
-//	static bool garbageFlushed = false;
 	
 	if (itc == NULL || !running->getValue()) {
 		return false;
@@ -493,74 +514,35 @@ bool ITC18StimDevice::readData(void) {
 	// When a sequence is started, the first three entries in the FIFO are garbage.  They should be thrown out.  
 	
 	if (getAvailable() > kGarbageLength + bufferLengthSamples + 1) {
-//		running->setValue(false);
 		stopDeviceIO();
 		return true;
 	}
 	else {
-		mprintf("bufferLengthSamples %d; available %d", bufferLengthSamples, getAvailable());
+//		mprintf("bufferLengthSamples %d; available %d", bufferLengthSamples, getAvailable());
 		return false;
 	}
-/*
- if (!garbageFlushed) {
-		if (available < kGarbageLength + 1) {
-			return false;
-		}
-//		ITC18_ReadFIFO(itc, kGarbageLength, samples);
-		garbageFlushed = true;
-		available = getAvailable();
-	}
-	
-	// Wait for the stimulus to be over.
-	
-	
-	if ((available = getAvailable()) < bufferLengthSamples) {
-		return false;
-	}
-	
-	return false;
-	
-	// When all the samples are available, read them and unpack them
-	// Initialize buffers for reading values;
-	
-	samples = (short *)malloc(sizeof(short) * bufferLengthSamples);
-	for (index = 0; index < channels; index++) {
-		channelSamples[index] = (short *)malloc(sizeof(short) * bufferLengthSets);
-	}
-	
-	ITC18_ReadFIFO(itc, bufferLengthSamples, samples);							// read all available sets
-	for (set = 0; set < sets; set++) {									// process each set
-		pSamples = &samples[(channels + 1) * set];						// point to start of a set
-		for (index = 0; index < channels; index++) {					// for every channel
-			channelSamples[index][set] = *pSamples++;
-		}
-	}
-	samplesReady = true;
-	
-	free(samples);
-	for (index = 0; index < channels; index++) {
-		free(channelSamples[index]);
-	}
-	return true;
-*/
 }
 
-// Start the scheduled IO on the ITC18StimDevice.  This starts a thread that reads the input ports
+// startDeviceIO doesn't do anything, because it is normally called at the start and end of every
+// trial.  To start the stimulus train, we monitor the variable "run", and respond to changes there
+// using the function changeRunState().
 
 bool ITC18StimDevice::startDeviceIO(void) {
-	
-//	bool runState;
 	
 	if (VERBOSE_IO_DEVICE >= 1) {
 		mprintf("ITC18StimDevice: startDeviceIO");
 	}
-	if (ITC18Running) {
-		merror(M_IODEVICE_MESSAGE_DOMAIN, 
-               "ITC18StimDevice startDeviceIO: request was made without first stopping IO, aborting");
-        return false;
-	}
+	return true;
+}
+
+bool ITC18StimDevice::startStimulus(void) {
 	
 	if (itc == NULL) {
+		return false;
+	}
+	if (ITC18Running) {
+		merror(M_IODEVICE_MESSAGE_DOMAIN, 
+			   "ITC18StimDevice startStimulus: request was made without first stopping IO, aborting");
 		return false;
 	}
 	if (!primed) {
@@ -569,8 +551,6 @@ bool ITC18StimDevice::startDeviceIO(void) {
 	boost::mutex::scoped_lock lock(ITC18DeviceLock); 
 	ITC18Running = true;
 	running->setValue(true);
-//	runState = running->getValue();
-//	mprintf("  ITC18StimDevice: startDeviceIO, running is %d", runState);
 	ITC18_Start(itc, false, true, false, false);				// Start ITC-18, no external trigger, output enabled
 	shared_ptr<ITC18StimDevice> this_one = shared_from_this();
 	pollScheduleNode = scheduler->scheduleUS(std::string(FILELINE ": ") + tag, 
@@ -586,13 +566,20 @@ bool ITC18StimDevice::startDeviceIO(void) {
 	return true;
 }
 
+// Make sure that the stimulus is not running past a call to stopDeviceIO
+
 bool ITC18StimDevice::stopDeviceIO() {
 	
-    // Stop the ITC18StimDevice collecting data.  This is typically called at the end of each trial.
-    
 	if (VERBOSE_IO_DEVICE >= 1) {
 		mprintf("ITC18StimDevice: stopDeviceIO");
 	}
+	return stopStimulus();
+}
+
+// Stop the ITC18StimDevice collecting data.  This is typically called at the end of each trial.
+
+bool ITC18StimDevice::stopStimulus() {
+	
 	
 	// stop all the scheduled DI checking (i.e. stop calls to "updateChannel")
 	
@@ -604,6 +591,7 @@ bool ITC18StimDevice::stopDeviceIO() {
 	if (itc != NULL) {
 		ITC18_Stop(itc);
 	}
+	run->setValue(false);
 	running->setValue(false);
 	ITC18Running = false;
 	return true;

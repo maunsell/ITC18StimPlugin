@@ -14,7 +14,7 @@
 #include <ITC/Itcmm.h>
 
 #undef VERBOSE_IO_DEVICE
-#define VERBOSE_IO_DEVICE 2					// verbosity level is 0-2, 2 is maximum
+#define VERBOSE_IO_DEVICE 0					// verbosity level is 0-2, 2 is maximum
 
 #define noErr       0
 
@@ -84,11 +84,13 @@ protected:
 public:
 	
 	boost::shared_ptr <Variable>	prime;
+	boost::shared_ptr <Variable>	run;
 	boost::shared_ptr <Variable>	running;
 
 	ITC18StimDevice(bool noAlternativeDevice,
 					const boost::shared_ptr <Scheduler> &a_scheduler,
 					const boost::shared_ptr <Variable> _prime,
+					const boost::shared_ptr <Variable> _run,
 					const boost::shared_ptr <Variable> _running,
 					const boost::shared_ptr <Variable> _train_duration_ms,
 					const boost::shared_ptr <Variable> _current_pulses,
@@ -104,26 +106,16 @@ public:
 	virtual bool shutdown();	
 	virtual bool initialize();
 	virtual bool startDeviceIO();
+	virtual bool startStimulus();
 	virtual bool stopDeviceIO();		
+	virtual bool stopStimulus();		
 	
+	void changeRunState(void);
 	void loadInstructions(void);
 	bool readData(void);
-//	void *readLaunch(const shared_ptr<mw::ITC18StimDevice> &args);
 	void markParametersDirty(void);
 	void variableSetup();
 
-/*	
-	virtual void setActive(bool _active){
-		boost::mutex::scoped_lock active_lock(active_mutex);
-		ITC18Active = _active;
-	}
-	
-	virtual bool getActive(){
-		boost::mutex::scoped_lock active_lock(active_mutex);
-		bool is_active = ITC18Active;
-		return is_active;
-	}
-*/	
 	shared_ptr<ITC18StimDevice> shared_from_this() { 
 		return static_pointer_cast<ITC18StimDevice>(IODevice::shared_from_this());
 	}
@@ -141,6 +133,20 @@ public:
 	virtual void notify(const Datum &data, MWTime timeUS){
 		shared_ptr<ITC18StimDevice> shared_daq(daq);
 		shared_daq->loadInstructions();
+	}
+};
+
+class ITC18StimDeviceRunNotification : public VariableNotification {
+	
+protected:
+	weak_ptr<ITC18StimDevice> daq;
+public:
+	ITC18StimDeviceRunNotification(weak_ptr<ITC18StimDevice> _daq){
+		daq = _daq;
+	}
+	virtual void notify(const Datum &data, MWTime timeUS){
+		shared_ptr<ITC18StimDevice> shared_daq(daq);
+		shared_daq->changeRunState();
 	}
 };
 
